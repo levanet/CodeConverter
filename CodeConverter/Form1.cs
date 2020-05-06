@@ -6,6 +6,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
 namespace CodeConverter
@@ -17,21 +18,25 @@ namespace CodeConverter
         StringBuilder sb = new StringBuilder();
         bool dead = false;
         bool endif = true;
+        bool endelse = true;
+        bool endfor = true;
+
         string[] splitvar = { };
         string code = "";
+        string extab = "";
 
         List<string> datatype = new List<string> { "int", "string", "float", "double", "char", "bool", "DateTime" };
         List<string> variables = new List<string> { };
         List<string> dtpvariables = new List<string> { };
-        List<char> ariphm = new List<char> { '+', '-', '*', '/', '=','(',')'}; 
+        List<char> ariphm = new List<char> { '+', '-', '*', '/', '=','(',')','<','>',';'}; 
 
-        char[] splitariphm = { '+', '-', '*', '/', '=', '(', ')' };
+        char[] splitariphm = { '+', '-', '*', '/', '=', '(', ')', '<', '>',';' };
         int linelength = 0;
         //main proj
         public Form1()
         {
             InitializeComponent();
-            richTextBox1.Text = "create int c\ncreate bool k\ncreate int a\ncreate char t\ncreate int b\nc=a+b";
+            richTextBox1.Text = "create int c\ncreate int i\ncreate int a\ncreate char t\ncreate int b\nfor i=0 i<b i++\nc=a+b\nendfor";
         }
 
         private void richTextBox1_TextChanged(object sender, EventArgs e)
@@ -46,7 +51,6 @@ namespace CodeConverter
             code = "";
             variables.Clear();
             dtpvariables.Clear();
-            label1.Text = "";
             string[] arr = new string[richTextBox1.Lines.Count()];
 
             mainProg();
@@ -55,7 +59,14 @@ namespace CodeConverter
                 richTextBox1.Text = richTextBox1.Text.Trim();
                 arr[i] = richTextBox1.Lines[i];
                 splitvar = arr[i].Split(' ');
-                
+                if(!endelse||!endif||!endfor)
+                {
+                    extab = "\t";
+                }
+                else
+                {
+                    extab = "";
+                }
                 switch (splitvar[0])
                 {
                     case "create":
@@ -63,7 +74,7 @@ namespace CodeConverter
                         {
                             if (datatype.Contains(splitvar[1]))
                             {
-                                code += Client.ClientCode(new CreateClass(), splitvar) + $";{Environment.NewLine}";
+                                code += Client.ClientCode(new CreateClass(), splitvar, extab) + $";{Environment.NewLine}";
                                 variables.Add(splitvar[splitvar.Length - 1]);
                                 dtpvariables.Add(splitvar[splitvar.Length - 2]);
                             }
@@ -86,7 +97,7 @@ namespace CodeConverter
                         {
                             if (datatype.Contains(splitvar[1]))
                             {
-                                code += Client.ClientCode(new InputClass(), splitvar) + $";{Environment.NewLine}";
+                                code += Client.ClientCode(new InputClass(), splitvar, extab) + $";{Environment.NewLine}";
                                 variables.Add(splitvar[splitvar.Length - 1]);
                                 dtpvariables.Add(splitvar[splitvar.Length - 2]);
                             }
@@ -105,32 +116,70 @@ namespace CodeConverter
                         }
                         break;
                     case "output":
-                        code += Client.ClientCode(new OutputClass(), splitvar) + $";{Environment.NewLine}";
+                        code += Client.ClientCode(new OutputClass(), splitvar, extab) + $";{Environment.NewLine}";
                         existedvar();
                         break;
                     case "if":
-                        code += Client.ClientCode(new IfClass(), splitvar) + $"{Environment.NewLine}";
-                        code += "{" + $"{Environment.NewLine}";
+                        code += Client.ClientCode(new IfClass(), splitvar, extab) + $"{Environment.NewLine}";
+                        code += "\t{" + $"{Environment.NewLine}";
                         existedvar();
                         endif = false;
                         break;
                     case "endif":
                         if (!endif)
                         {
-                            code += "}" + $"{Environment.NewLine}";
                             endif = true;
+                            code += "\t}" + $"{Environment.NewLine}";
                         }
                         else
                         {
                             dead = true;
-                            MessageBox.Show($"Excess endif{Environment.NewLine}Close window", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show($"endif is excess{Environment.NewLine}Close window", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }
                         break;
+                    case "else":
+                        code += "\telse" + $"{Environment.NewLine}";
+                        code += "\t{" + $"{Environment.NewLine}";
+                        endelse = false;
+                        break;
+                    case "endelse":
+                        if (!endelse)
+                        {
+                            endelse = true;
+                            code += "\t}" + $"{Environment.NewLine}";
+                        }
+                        else
+                        {
+                            dead = true;
+                            MessageBox.Show($"endelse is excess{Environment.NewLine}Close window", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                        break;
+                    case "for":
+                        code += Client.ClientCode(new ForClass(), splitvar, extab) + $"{Environment.NewLine}";
+                        code += "\t{" + $"{Environment.NewLine}";
+                        existedvar();
+                        endfor = false;
+                        break;
+                    case "endfor":
+                        if (!endfor)
+                        {
+                            endfor = true;
+                            code += "\t}" + $"{Environment.NewLine}";
+                        }
+                        else
+                        {
+                            dead = true;
+                            MessageBox.Show($"endfor is excess{Environment.NewLine}Close window", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                        break;
+                    case "":
+                        break;
                     case string s when variables.Contains(splitvar[0]):
-                        code += Client.ClientCode(new VarClass(), splitvar) + $";{Environment.NewLine}";
+                        code += Client.ClientCode(new VarClass(), splitvar,extab) + $";{Environment.NewLine}";
                         existedvar();
                         break;
                     default:
+                        undrline(i);
                         undrline(i);
                         MessageBox.Show($"Syntax Error{Environment.NewLine}Close window", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         prcrash();
@@ -141,13 +190,13 @@ namespace CodeConverter
             }
 
             code += "}";
-            if(!endif)
+            if(!endif||!endfor||!endelse)
             {
                 dead = true;
-                MessageBox.Show($"endif doesnt exist{Environment.NewLine}Close window", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"end structure doesnt exist{Environment.NewLine}Close window", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             if (!dead)
-                label1.Text = code;
+                richTextBox2.Text = code;
         }
         void mainProg()
         {
@@ -156,12 +205,14 @@ namespace CodeConverter
         }
         void existedvar()
         {
+            Regex rgx = new Regex(@"[0-9]$");
+            string arrrr = splitvar[1];
             for (int j = 1; j < splitvar.Length; j++)
             {
-                if (variables.Contains(splitvar[j].TrimStart(splitariphm)))
+                if (splitvar[j].Contains("\"")||rgx.IsMatch(splitvar[j]) ||splitvar[j].TrimStart(splitariphm) == "" || variables.Contains(splitvar[j].TrimStart(splitariphm)))
                 {
                     //MessageBox.Show(dtpvariables[variables.IndexOf(splitvar[j].TrimStart(splitariphm))].ToString(), dtpvariables[variables.IndexOf(splitvar[j - 1].TrimStart(splitariphm))].ToString(), MessageBoxButtons.OK);
-                    if (splitvar[j - 1] == "if"||dtpvariables[variables.IndexOf(splitvar[j].TrimStart(splitariphm))] == dtpvariables[variables.IndexOf(splitvar[j - 1].TrimStart(splitariphm))])
+                    if (splitvar[j - 1] == "if"|| splitvar[j - 1] == "output"|| rgx.IsMatch(splitvar[j]) || splitvar[j - 1] == "for" || splitvar[j].TrimStart(splitariphm) == "" || splitvar[j].Contains("\"") || dtpvariables[variables.IndexOf(splitvar[j].TrimStart(splitariphm))] == dtpvariables[variables.IndexOf(arrrr.TrimStart(splitariphm))])
                     {
 
                     }
@@ -195,6 +246,11 @@ namespace CodeConverter
             for (int i = 1; i < stroka.Length - 1; ++i)
             {
                 result.Append(stroka[i]);
+                if (stroka[i] == stroka[i + 1] && ariphm.Contains(stroka[i + 1]))
+                {
+                    continue;
+                }
+                else
                 if (stroka[i] != ' ' && ariphm.Contains(stroka[i + 1]))
                 {
                     result.Append(' ');
@@ -217,13 +273,14 @@ namespace CodeConverter
             //if (e.KeyCode == Keys.Enter)
             //validation(richTextBox1.Text);
         }
+
     }
     abstract class AbstractClass
     {
         // Шаблонный метод определяет скелет алгоритма.
-        public string TemplateMethod(string[] var)
+        public string TemplateMethod(string[] var,string tab)
         {
-            return (this.RequiredOperations1(var) + "\n" + this.RequiredOperation2(var));
+            return (tab+"\t"+this.RequiredOperations1(var) + "\n\t"+tab + this.RequiredOperation2(var));
         }
 
 
@@ -263,7 +320,12 @@ namespace CodeConverter
 
         protected override string RequiredOperation2(string[] variable)
         {
-            return ($"Console.WriteLine({variable[variable.Length - 1]})");
+            StringBuilder str = new StringBuilder();
+            for (int i = 2; i < variable.Length; i++)
+            {
+                str.Append("+"+variable[i]);
+            }
+            return ($"Console.WriteLine({variable[1]+str})");
         }
 
     }
@@ -297,7 +359,7 @@ namespace CodeConverter
         protected override string RequiredOperations1(string[] variable)
         {
 
-            return ($"execute variable {variable[0]}");
+            return ($"//execute variable {variable[0]}");
 
         }
 
@@ -318,7 +380,7 @@ namespace CodeConverter
         protected override string RequiredOperations1(string[] variable)
         {
 
-            return ($"execute structure {variable[0]}");
+            return ($"//execute structure {variable[0]}");
 
         }
 
@@ -334,12 +396,35 @@ namespace CodeConverter
 
         }
     }
+    class ForClass : AbstractClass
+    {
+        protected override string RequiredOperations1(string[] variable)
+        {
+
+            return ($"//execute structure {variable[0]}");
+
+        }
+
+        protected override string RequiredOperation2(string[] variable)
+        {
+
+            StringBuilder str = new StringBuilder();
+            for (int i = 1; i < variable.Length; i++)
+            {
+                //MessageBox.Show(variable[i]);
+                str.Append(' '+variable[i]);
+                //MessageBox.Show(str.ToString(), "", MessageBoxButtons.OK);
+            }
+            return ($"{variable[0]}({str})");
+
+        }
+    }
     class Client
     {
-        public static string ClientCode(AbstractClass abstractClass,string[] variable)
+        public static string ClientCode(AbstractClass abstractClass,string[] variable,string tab)
         {
             // ...
-            return(abstractClass.TemplateMethod(variable));
+            return(abstractClass.TemplateMethod(variable,tab));
             // ...
         }
     }
