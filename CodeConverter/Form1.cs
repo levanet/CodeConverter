@@ -21,6 +21,8 @@ namespace CodeConverter
         bool endelse = true;
         bool endfor = true;
 
+
+        string startex=null;
         string[] splitvar = { };
         string code = "";
         string extab = "";
@@ -36,7 +38,7 @@ namespace CodeConverter
         public Form1()
         {
             InitializeComponent();
-            richTextBox1.Text = "create int c\ncreate int i\ncreate int a\ncreate char t\ncreate int b\nfor i=0 i<b i++\nc=a+b\nendfor";
+            richTextBox1.Text = "create int c\ncreate int i\ncreate int a\ncreate char t\ncreate int b\nc=9*5+b\nfor i=0; i<b; i++\nc=a+b\nendfor\nif a=b\nc=b-a\nendif\nelse\nc=b*a\nendelse";
         }
 
         private void richTextBox1_TextChanged(object sender, EventArgs e)
@@ -117,11 +119,13 @@ namespace CodeConverter
                         break;
                     case "output":
                         code += Client.ClientCode(new OutputClass(), splitvar, extab) + $";{Environment.NewLine}";
+                        startex = splitvar[1];
                         existedvar();
                         break;
                     case "if":
                         code += Client.ClientCode(new IfClass(), splitvar, extab) + $"{Environment.NewLine}";
                         code += "\t{" + $"{Environment.NewLine}";
+                        startex = splitvar[1];
                         existedvar();
                         endif = false;
                         break;
@@ -155,9 +159,18 @@ namespace CodeConverter
                         }
                         break;
                     case "for":
-                        code += Client.ClientCode(new ForClass(), splitvar, extab) + $"{Environment.NewLine}";
-                        code += "\t{" + $"{Environment.NewLine}";
-                        existedvar();
+                        if (splitvar.Contains(";"))
+                        {
+                            startex = splitvar[1];
+                            code += Client.ClientCode(new ForClass(), splitvar, extab) + $"{Environment.NewLine}";
+                            code += "\t{" + $"{Environment.NewLine}";
+                            existedvar();
+                        }
+                        else
+                        {
+                            dead = true;
+                            MessageBox.Show($"; in for menu is excess{Environment.NewLine}Close window", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
                         endfor = false;
                         break;
                     case "endfor":
@@ -176,6 +189,7 @@ namespace CodeConverter
                         break;
                     case string s when variables.Contains(splitvar[0]):
                         code += Client.ClientCode(new VarClass(), splitvar,extab) + $";{Environment.NewLine}";
+                        startex = splitvar[0];
                         existedvar();
                         break;
                     default:
@@ -206,13 +220,13 @@ namespace CodeConverter
         void existedvar()
         {
             Regex rgx = new Regex(@"[0-9]$");
-            string arrrr = splitvar[1];
             for (int j = 1; j < splitvar.Length; j++)
             {
                 if (splitvar[j].Contains("\"")||rgx.IsMatch(splitvar[j]) ||splitvar[j].TrimStart(splitariphm) == "" || variables.Contains(splitvar[j].TrimStart(splitariphm)))
                 {
+                    //MessageBox.Show(splitvar[j]);
                     //MessageBox.Show(dtpvariables[variables.IndexOf(splitvar[j].TrimStart(splitariphm))].ToString(), dtpvariables[variables.IndexOf(splitvar[j - 1].TrimStart(splitariphm))].ToString(), MessageBoxButtons.OK);
-                    if (splitvar[j - 1] == "if"|| splitvar[j - 1] == "output"|| rgx.IsMatch(splitvar[j]) || splitvar[j - 1] == "for" || splitvar[j].TrimStart(splitariphm) == "" || splitvar[j].Contains("\"") || dtpvariables[variables.IndexOf(splitvar[j].TrimStart(splitariphm))] == dtpvariables[variables.IndexOf(arrrr.TrimStart(splitariphm))])
+                    if (splitvar[j - 1] == "if"|| splitvar[j - 1] == "output"|| rgx.IsMatch(splitvar[j]) || splitvar[j - 1] == "for" || splitvar[j].TrimStart(splitariphm) == "" || splitvar[j].Contains("\"") || dtpvariables[variables.IndexOf(splitvar[j].TrimStart(splitariphm))] == dtpvariables[variables.IndexOf(startex.TrimStart(splitariphm))])
                     {
 
                     }
@@ -260,7 +274,7 @@ namespace CodeConverter
             if (stroka.Length > 0)
                 result.Append(stroka[stroka.Length - 1]);
             richTextBox1.Clear();
-            MessageBox.Show(result.ToString(), "", MessageBoxButtons.OK);
+            //MessageBox.Show(result.ToString(), "", MessageBoxButtons.OK);
             richTextBox1.Text = result.ToString();
         }
 
@@ -412,7 +426,7 @@ namespace CodeConverter
             for (int i = 1; i < variable.Length; i++)
             {
                 //MessageBox.Show(variable[i]);
-                str.Append(' '+variable[i]);
+                str.Append(' ' + variable[i]);
                 //MessageBox.Show(str.ToString(), "", MessageBoxButtons.OK);
             }
             return ($"{variable[0]}({str})");
