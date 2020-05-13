@@ -1,0 +1,16 @@
+create int c
+create int i
+create int a
+array char t 4
+create int b
+c =9 *5 +b
+for i =0 ; i <b ; i ++
+c =a +b
+endfor
+if a =b
+c =b -a
+endif
+else
+c =b *a
+endelse
+

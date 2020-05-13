@@ -1,9 +1,9 @@
 C:\Users\Leva\source\repos\CodeConverter\bin\Debug\CodeConverter.exe
 C:\Users\Leva\source\repos\CodeConverter\bin\Debug\CodeConverter.pdb
-C:\Users\Leva\source\repos\CodeConverter\obj\Debug\CodeConverter.csprojAssemblyReference.cache
 C:\Users\Leva\source\repos\CodeConverter\obj\Debug\CodeConverter.Form1.resources
 C:\Users\Leva\source\repos\CodeConverter\obj\Debug\CodeConverter.Properties.Resources.resources
 C:\Users\Leva\source\repos\CodeConverter\obj\Debug\CodeConverter.csproj.GenerateResource.cache
 C:\Users\Leva\source\repos\CodeConverter\obj\Debug\CodeConverter.exe
 C:\Users\Leva\source\repos\CodeConverter\obj\Debug\CodeConverter.pdb
 C:\Users\Leva\source\repos\CodeConverter\obj\Debug\CodeConverter.csproj.CoreCompileInputs.cache
+C:\Users\Leva\source\repos\CodeConverter\obj\Debug\CodeConverter.Form2.resources

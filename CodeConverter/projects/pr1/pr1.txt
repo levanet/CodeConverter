@@ -1,0 +1,13 @@
+array int mas 10
+create int i
+create int max
+for i =0 ; i <10 ; i ++
+input int mas[i]
+endfor
+max =mas [0]
+for i =0 ; i <10 ; i ++
+if mas[i] >max
+max =mas[i]
+endif
+endfor
+output max
